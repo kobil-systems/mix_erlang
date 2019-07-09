@@ -3,10 +3,23 @@ defmodule Mix.Tasks.Ct do
 
   @preferred_cli_env :test
 
-  def run(_args) do
+  @options [
+    suite: [:string, :keep],
+    dir: [:string, :keep],
+    sys_config: [:string, :keep],
+    cover: :bool
+  ]
+
+  def run(args) do
+    {opts, _, []} = OptionParser.parse(args, strict: @options, aliases: [c: :cover])
+
+    IO.inspect(opts)
+
     unless System.get_env("MIX_ENV") || Mix.env() == :test do
-      Mix.raise("\"mix ct\" is running in the \"#{Mix.env()}\" environment. " <>
-        "If you are running tests alongside another task, please set MIX_ENV")
+      Mix.raise(
+        "\"mix ct\" is running in the \"#{Mix.env()}\" environment. " <>
+          "If you are running tests alongside another task, please set MIX_ENV"
+      )
     end
 
     Mix.Task.run(:compile)
@@ -18,6 +31,9 @@ defmodule Mix.Tasks.Ct do
       |> Keyword.put(:auto_compile, false)
       |> Keyword.put_new(:dirs, ["test"])
       |> Keyword.put_new(:logdir, 'log/ct')
+      |> set_args(:suite, opts)
+      |> set_args(:config, opts, :sys_config)
+      |> Keyword.update!(:dirs, & &1 ++ Keyword.get_values(opts, :dir))
 
     File.mkdir_p!(options[:logdir])
 
@@ -31,7 +47,16 @@ defmodule Mix.Tasks.Ct do
         Mix.raise("Common test suite failed")
 
       {:error, reason} ->
-        Mix.raise("Failed to run common test with reason: #{inspect(reason)}")
+        Mix.raise("Failed to run common test with reason: #{inspect(reason, pretty: true)}")
+    end
+  end
+
+  defp set_args(options, key, args), do: set_args(options, key, args, key)
+
+  defp set_args(options, okey, args, akey) do
+    case Keyword.get_values(args, akey) do
+      [] -> options
+      values when is_list(values) -> Keyword.put(options, okey, values)
     end
   end
 
@@ -43,8 +68,7 @@ defmodule Mix.Tasks.Ct do
     File.mkdir_p!(ebin)
 
     for path <- dirs,
-      file <- Path.wildcard("#{path}/**/*_SUITE.erl")
-    do
+        file <- Path.wildcard("#{path}/**/*_SUITE.erl") do
       {:ok, _} = :compile.file(String.to_charlist(file), [:report, outdir: ebin])
     end
 
