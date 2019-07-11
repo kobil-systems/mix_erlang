@@ -6,6 +6,6 @@ defmodule Mix.Tasks.Xeref do
 
     {:ok, pid} = :xref.start(xref_mode: :functions)
 
-    IO.inspect :xref.analyze(pid, :deprecated_functions)
+    IO.inspect(:xref.analyze(pid, :deprecated_functions))
   end
 end

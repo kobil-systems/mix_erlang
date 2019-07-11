@@ -14,8 +14,8 @@ defmodule MixErlang.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      # {:rebar3, github: "erlang/rebar3", tag: "3.11.0"},
       {:cth_readable, "~> 1.4.5"},
-
       {:ex_doc, ">= 0.0.0", only: [:dev], runtime: false}
     ]
   end
