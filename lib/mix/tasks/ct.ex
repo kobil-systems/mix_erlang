@@ -7,11 +7,11 @@ defmodule Mix.Tasks.Ct do
     suite: [:string, :keep],
     dir: [:string, :keep],
     sys_config: [:string, :keep],
-    cover: :bool
+    cover: :boolean
   ]
 
   def run(args) do
-    {opts, args_rest, []} = OptionParser.parse(args, switches: @options, aliases: [c: :cover])
+    {opts, _, _} = OptionParser.parse(args, strict: @options, aliases: [c: :cover])
 
     unless System.get_env("MIX_ENV") || Mix.env() == :test do
       Mix.raise(
@@ -20,7 +20,7 @@ defmodule Mix.Tasks.Ct do
       )
     end
 
-    Mix.Task.run(:compile, args_rest)
+    Mix.Task.run(:compile)
     Mix.Task.run(:loadpaths)
 
     :ok = Mix.Erlang.load_configs(Keyword.get_values(opts, :sys_config))
