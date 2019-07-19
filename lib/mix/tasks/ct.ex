@@ -23,10 +23,10 @@ defmodule Mix.Tasks.Ct do
       )
     end
 
+    :ok = Mix.Erlang.load_configs(Keyword.get_values(opts, :sys_config))
+
     Mix.Task.run(:compile)
     Mix.Task.run(:loadpaths)
-
-    :ok = Mix.Erlang.load_configs(Keyword.get_values(opts, :sys_config))
 
     options =
       project
