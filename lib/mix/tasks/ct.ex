@@ -10,8 +10,11 @@ defmodule Mix.Tasks.Ct do
     cover: :boolean
   ]
 
+  @cover [tool: Mix.Tasks.Test.Cover, output: "cover"]
+
   def run(args) do
     {opts, _, _} = OptionParser.parse(args, strict: @options, aliases: [c: :cover])
+    project = Mix.Project.config()
 
     unless System.get_env("MIX_ENV") || Mix.env() == :test do
       Mix.raise(
@@ -26,7 +29,7 @@ defmodule Mix.Tasks.Ct do
     :ok = Mix.Erlang.load_configs(Keyword.get_values(opts, :sys_config))
 
     options =
-      Mix.Project.config()
+      project
       |> Keyword.get(:ct_options, [])
       |> Keyword.put(:auto_compile, false)
       |> Keyword.put_new(:dirs, ["test"])
@@ -38,8 +41,16 @@ defmodule Mix.Tasks.Ct do
 
     {:ok, ebin} = compile_tests(options)
 
+    cover =
+      if opts[:cover] do
+        compile_path = Mix.Project.compile_path(project)
+        cover = Keyword.merge(@cover, project[:test_coverage] || [])
+        cover[:tool].start(compile_path, cover)
+      end
+
     case :ct.run_test(Keyword.put(options, :dir, [ebin])) do
       {_, 0, _} ->
+        cover && cover.()
         :ok
 
       {_, n, _} when n > 0 ->
