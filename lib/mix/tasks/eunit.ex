@@ -1,7 +1,16 @@
 defmodule Mix.Tasks.Eunit do
   use Mix.Task
 
-  def run(_args) do
+  @options [
+    cover: :boolean
+  ]
+
+  @cover [tool: Mix.Tasks.Test.Cover, output: "cover"]
+
+  def run(args) do
+    {opts, _, _} = OptionParser.parse(args, strict: @options, aliases: [c: :cover])
+    project = Mix.Project.config()
+
     unless System.get_env("MIX_ENV") || Mix.env() == :test do
       Mix.raise(
         "\"mix ct\" is running in the \"#{Mix.env()}\" environment. " <>
@@ -14,8 +23,17 @@ defmodule Mix.Tasks.Eunit do
     appname = Keyword.fetch!(Mix.Project.config(), :app)
     :ok = Application.load(appname)
 
+    cover =
+      if opts[:cover] do
+        compile_path = Mix.Project.compile_path(project)
+        cover = Keyword.merge(@cover, project[:test_coverage] || [])
+        cover[:tool].start(compile_path, cover)
+      end
+
     case :eunit.test({:application, appname}) do
-      :ok -> :ok
+      :ok ->
+        cover && cover.()
+        :ok
       :error -> Mix.raise("EUnit tests failed")
     end
   end
