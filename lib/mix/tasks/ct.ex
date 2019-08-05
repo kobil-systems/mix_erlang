@@ -5,6 +5,8 @@ defmodule Mix.Tasks.Ct do
 
   @options [
     suite: [:string, :keep],
+    group: [:string, :keep],
+    testcase: [:string, :keep],
     dir: [:string, :keep],
     sys_config: [:string, :keep],
     cover: :boolean
@@ -35,6 +37,8 @@ defmodule Mix.Tasks.Ct do
       |> Keyword.put_new(:dirs, ["test"])
       |> Keyword.put_new(:logdir, 'log/ct')
       |> set_args(:suite, opts)
+      |> set_args(:group, opts)
+      |> set_args(:testcase, opts)
       |> Keyword.update!(:dirs, &(&1 ++ Keyword.get_values(opts, :dir)))
 
     File.mkdir_p!(options[:logdir])
