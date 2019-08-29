@@ -15,7 +15,7 @@ defmodule Mix.Tasks.Ct do
   @cover [tool: Mix.Tasks.Test.Cover, output: "cover"]
 
   def run(args) do
-    {opts, _, _} = OptionParser.parse(args, strict: @options, aliases: [c: :cover])
+    {opts, _, args} = OptionParser.parse(args, strict: @options, aliases: [c: :cover])
     project = Mix.Project.config()
 
     unless System.get_env("MIX_ENV") || Mix.env() == :test do
@@ -27,7 +27,7 @@ defmodule Mix.Tasks.Ct do
 
     :ok = Mix.Erlang.load_configs(Keyword.get_values(opts, :sys_config))
 
-    Mix.Task.run(:compile)
+    Mix.Project.compile(args)
     Mix.Task.run(:loadpaths)
 
     options =

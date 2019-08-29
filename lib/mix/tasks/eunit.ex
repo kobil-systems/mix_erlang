@@ -8,7 +8,7 @@ defmodule Mix.Tasks.Eunit do
   @cover [tool: Mix.Tasks.Test.Cover, output: "cover"]
 
   def run(args) do
-    {opts, _, _} = OptionParser.parse(args, strict: @options, aliases: [c: :cover])
+    {opts, _, args} = OptionParser.parse(args, strict: @options, aliases: [c: :cover])
     project = Mix.Project.config()
 
     unless System.get_env("MIX_ENV") || Mix.env() == :test do
@@ -18,10 +18,14 @@ defmodule Mix.Tasks.Eunit do
       )
     end
 
-    recompile()
+    options =
+      [{:d, :EUNIT}, {:d, :TEST}, :verbose] ++
+        Keyword.get(Mix.Project.config(), :erlc_options, [])
 
-    appname = Keyword.fetch!(Mix.Project.config(), :app)
-    :ok = Application.load(appname)
+    System.put_env("ERL_COMPILER_OPTIONS", List.to_string(:io_lib.format("~p", [options])))
+
+    Mix.Project.compile(args)
+    Mix.Task.run(:loadpaths)
 
     cover =
       if opts[:cover] do
@@ -30,21 +34,13 @@ defmodule Mix.Tasks.Eunit do
         cover[:tool].start(compile_path, cover)
       end
 
-    case :eunit.test({:application, appname}) do
+    appname = Keyword.fetch!(project, :app)
+
+    case :eunit.test(application: appname) do
       :ok ->
         cover && cover.()
         :ok
       :error -> Mix.raise("EUnit tests failed")
     end
-  end
-
-  defp recompile do
-    options =
-      [{:d, :EUNIT}, {:d, :TEST}, :verbose] ++
-        Keyword.get(Mix.Project.config(), :erlc_options, [])
-
-    System.put_env("ERL_COMPILER_OPTIONS", List.to_string(:io_lib.format("~p", [options])))
-
-    Mix.Task.run("compile")
   end
 end
