@@ -8,7 +8,7 @@ defmodule Mix.Tasks.Eunit do
   @cover [tool: Mix.Tasks.Test.Cover, output: "cover"]
 
   def run(args) do
-    {opts, _, args} = OptionParser.parse(args, strict: @options, aliases: [c: :cover])
+    {opts, _, _} = OptionParser.parse(args, strict: @options, aliases: [c: :cover])
     project = Mix.Project.config()
 
     unless System.get_env("MIX_ENV") || Mix.env() == :test do
@@ -18,11 +18,9 @@ defmodule Mix.Tasks.Eunit do
       )
     end
 
-    options =
-      [{:d, :EUNIT}, {:d, :TEST}, :verbose] ++
-        Keyword.get(Mix.Project.config(), :erlc_options, [])
+    options = [{:d, :EUNIT}, {:d, :TEST}]
 
-    System.put_env("ERL_COMPILER_OPTIONS", List.to_string(:io_lib.format("~p", [options])))
+    System.put_env("ERL_COMPILER_OPTIONS", List.to_string(:io_lib.format("~w", [options])))
 
     Mix.Project.compile(args)
     Mix.Task.run(:loadpaths)
