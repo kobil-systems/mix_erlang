@@ -25,6 +25,10 @@ defmodule Mix.Tasks.Ct do
       )
     end
 
+    options = [{:d, :TEST}]
+
+    System.put_env("ERL_COMPILER_OPTIONS", List.to_string(:io_lib.format("~w", [options])))
+
     :ok = Mix.Erlang.load_configs(Keyword.get_values(opts, :sys_config))
 
     Mix.Project.compile(args)
