@@ -48,7 +48,7 @@ defmodule Mix.Tasks.Ct do
 
     File.mkdir_p!(options[:logdir])
 
-    {:ok, ebin} = compile_tests(options)
+    {:ok, suites} = compile_tests(options)
 
     cover =
       if opts[:cover] do
@@ -57,9 +57,21 @@ defmodule Mix.Tasks.Ct do
         cover[:tool].start(compile_path, cover)
       end
 
-    case :ct.run_test(Keyword.put(options, :dir, [ebin])) do
-      {_, 0, _} ->
+      case :ct.run_test(Keyword.put_new(options, :suite, suites)) do
+      {ok, failed, {user_skipped, auto_skipped}} ->
         cover && cover.()
+
+        Mix.shell().info("""
+          Finished:
+          #{ok} passed
+          #{failed} failed
+          #{user_skipped + auto_skipped} skipped
+        """)
+
+        if failed > 0 do
+          Mix.raise("Common Test failed")
+        end
+
         :ok
 
       {_, n, _} when n > 0 ->
@@ -75,24 +87,26 @@ defmodule Mix.Tasks.Ct do
   defp set_args(options, okey, args, akey) do
     case Keyword.get_values(args, akey) do
       [] -> options
-      values when is_list(values) -> Keyword.put(options, okey, Enum.map(values, &to_charlist/1))
+      values when is_list(values) ->
+        Keyword.put(options, okey, Enum.map(values, &to_charlist/1))
     end
   end
 
   defp compile_tests(options) do
     dirs = Keyword.fetch!(options, :dirs)
 
-    ebin = Path.join(Mix.Project.build_path(), "common_test") |> to_charlist()
+    erlc_opts = [:report, :binary] ++ Mix.Project.config()[:erlc_options]
 
-    erlc_opts = [:report, outdir: ebin] ++ Mix.Project.config()[:erlc_options]
+    mods =
+      for path <- dirs,
+          file <- Path.wildcard("#{path}/**/*_SUITE.erl") do
+        {:ok, mod, binary} = :compile.file(String.to_charlist(file), erlc_opts)
 
-    File.mkdir_p!(ebin)
+        {:module, ^mod} = :code.load_binary(mod, to_charlist(file), binary)
 
-    for path <- dirs,
-        file <- Path.wildcard("#{path}/**/*_SUITE.erl") do
-      {:ok, _} = :compile.file(String.to_charlist(file), erlc_opts)
-    end
+        mod
+      end
 
-    {:ok, ebin}
+    {:ok, mods}
   end
 end
