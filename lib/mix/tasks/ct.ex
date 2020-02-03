@@ -2,6 +2,7 @@ defmodule Mix.Tasks.Ct do
   use Mix.Task
 
   @preferred_cli_env :test
+  @recursive true
 
   @options [
     suite: [:string, :keep],
@@ -81,7 +82,7 @@ defmodule Mix.Tasks.Ct do
   defp compile_tests(options) do
     dirs = Keyword.fetch!(options, :dirs)
 
-    ebin = Path.join(Mix.Project.app_path(), "common_test") |> to_charlist()
+    ebin = Path.join(Mix.Project.build_path(), "common_test") |> to_charlist()
 
     erlc_opts = [:report, outdir: ebin] ++ Mix.Project.config()[:erlc_options]
 
