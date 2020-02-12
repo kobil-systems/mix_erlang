@@ -69,13 +69,13 @@ defmodule Mix.Tasks.Ct do
         """)
 
         if failed > 0 do
-          Mix.raise("Common Test failed")
+          System.at_exit(fn _ -> exit({:shutdown, 1}) end)
         end
 
         :ok
 
       {_, n, _} when n > 0 ->
-        System.at_exit(fn _ -> exit({:shutdown, 1}) end)
+        Mix.raise("Common test suite failed")
 
       {:error, reason} ->
         Mix.raise("Failed to run common test with reason: #{inspect(reason, pretty: true)}")
