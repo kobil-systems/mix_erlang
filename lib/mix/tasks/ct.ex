@@ -40,7 +40,7 @@ defmodule Mix.Tasks.Ct do
       |> Keyword.get(:ct_options, [])
       |> Keyword.put(:auto_compile, false)
       |> Keyword.put_new(:dirs, ["test"])
-      |> Keyword.put_new(:logdir, 'log/ct')
+      |> Keyword.update(:logdir, 'log/ct', &to_erl_path/1)
       |> set_args(:suite, opts)
       |> set_args(:group, opts)
       |> set_args(:testcase, opts)
@@ -57,7 +57,7 @@ defmodule Mix.Tasks.Ct do
         cover[:tool].start(compile_path, cover)
       end
 
-      case :ct.run_test(Keyword.put_new(options, :suite, suites)) do
+    case :ct.run_test(Keyword.put_new(options, :suite, suites)) do
       {ok, failed, {user_skipped, auto_skipped}} ->
         cover && cover.()
 
@@ -75,7 +75,7 @@ defmodule Mix.Tasks.Ct do
         :ok
 
       {_, n, _} when n > 0 ->
-        Mix.raise("Common test suite failed")
+        System.at_exit(fn _ -> exit({:shutdown, 1}) end)
 
       {:error, reason} ->
         Mix.raise("Failed to run common test with reason: #{inspect(reason, pretty: true)}")
@@ -86,7 +86,9 @@ defmodule Mix.Tasks.Ct do
 
   defp set_args(options, okey, args, akey) do
     case Keyword.get_values(args, akey) do
-      [] -> options
+      [] ->
+        options
+
       values when is_list(values) ->
         Keyword.put(options, okey, Enum.map(values, &to_charlist/1))
     end
@@ -94,8 +96,9 @@ defmodule Mix.Tasks.Ct do
 
   defp compile_tests(options) do
     dirs = Keyword.fetch!(options, :dirs)
+    include_dir = to_erl_path(Mix.Project.config()[:erlc_include_path])
 
-    erlc_opts = [:report, :binary] ++ Mix.Project.config()[:erlc_options]
+    erlc_opts = [:report, :binary, {:i, include_dir}] ++ Mix.Project.config()[:erlc_options]
 
     mods =
       for path <- dirs,
@@ -109,4 +112,7 @@ defmodule Mix.Tasks.Ct do
 
     {:ok, mods}
   end
+
+  defp to_erl_path(path) when is_binary(path), do: String.to_charlist(path)
+  defp to_erl_path(path) when is_list(path), do: path
 end
