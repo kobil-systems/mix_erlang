@@ -38,7 +38,9 @@ defmodule Mix.Tasks.Eunit do
       :ok ->
         cover && cover.()
         :ok
-      :error -> Mix.raise("EUnit tests failed")
+
+      :error ->
+        System.at_exit(fn _ -> exit({:shutdown, 1}) end)
     end
   end
 end
