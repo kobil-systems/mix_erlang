@@ -26,14 +26,9 @@ defmodule Mix.Tasks.Ct do
       )
     end
 
-    options = [{:d, :TEST}]
+    options = [d: :TEST]
 
-    System.put_env("ERL_COMPILER_OPTIONS", List.to_string(:io_lib.format("~w", [options])))
-
-    :ok = Mix.Erlang.load_configs(Keyword.get_values(opts, :sys_config))
-
-    Mix.Project.compile(args)
-    Mix.Task.run(:loadpaths)
+    :ok = Mix.Erlang.recompile_with_options(args, options)
 
     options =
       project
@@ -73,9 +68,6 @@ defmodule Mix.Tasks.Ct do
         end
 
         :ok
-
-      {_, n, _} when n > 0 ->
-        Mix.raise("Common test suite failed")
 
       {:error, reason} ->
         Mix.raise("Failed to run common test with reason: #{inspect(reason, pretty: true)}")

@@ -18,12 +18,9 @@ defmodule Mix.Tasks.Eunit do
       )
     end
 
-    options = [{:d, :EUNIT}, {:d, :TEST}]
+    options = [d: :EUNIT, d: :TEST]
 
-    System.put_env("ERL_COMPILER_OPTIONS", List.to_string(:io_lib.format("~w", [options])))
-
-    Mix.Project.compile(args)
-    Mix.Task.run(:loadpaths)
+    Mix.Erlang.recompile_with_options(args, options)
 
     cover =
       if opts[:cover] do
