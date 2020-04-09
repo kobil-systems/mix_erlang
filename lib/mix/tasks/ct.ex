@@ -26,7 +26,12 @@ defmodule Mix.Tasks.Ct do
       )
     end
 
-    options = [d: :TEST]
+    options =
+      if {:d, :TEST} in Mix.Project.config()[:erlc_options] do
+        []
+      else
+        [d: :TEST]
+      end
 
     :ok = Mix.Erlang.recompile_with_options(args, options)
 
